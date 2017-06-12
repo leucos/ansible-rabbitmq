@@ -8,9 +8,6 @@
   register: __rabbitmq_cookie
   tags: ["rabbit:cookie"]
 
-- debug: msg="Cookie is {{ __rabbitmq_cookie.content }}"
-  when: groups[rabbitmq_group].0 == inventory_hostname
-
 - name: Copies erlang.cookie to host
   copy:
     dest: /var/lib/rabbitmq/.erlang.cookie
@@ -44,3 +41,10 @@
   when: (__rabbitmq_join is defined) and
         ('already_member' not in __rabbitmq_join.stderr) and
         (__rabbitmq_join.rc != 0)
+
+- name: Ensure the default vhost contains the HA policy
+  rabbitmq_policy:
+    name: HA
+    pattern: .*
+    tags:
+      ha-mode: all
