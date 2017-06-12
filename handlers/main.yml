@@ -1,0 +1,8 @@
+- name: Restart rabbitmq
+  service:
+    name: rabbitmq-server
+    state: restarted
+
+- name: Start rabbitmq app
+  shell: rabbitmqctl start_app
+

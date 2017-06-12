@@ -1,0 +1,46 @@
+- debug: msg="Master is {{ groups[rabbitmq_group].0 }}"
+  tags: ["rabbit:cookie"]
+
+- name: Slurps erlang.cookie from master
+  slurp:
+    src: /var/lib/rabbitmq/.erlang.cookie
+  delegate_to: "{{ groups[rabbitmq_group].0 }}"
+  register: __rabbitmq_cookie
+  tags: ["rabbit:cookie"]
+
+- debug: msg="Cookie is {{ __rabbitmq_cookie.content }}"
+  when: groups[rabbitmq_group].0 == inventory_hostname
+
+- name: Copies erlang.cookie to host
+  copy:
+    dest: /var/lib/rabbitmq/.erlang.cookie
+    content: "{{ __rabbitmq_cookie.content | b64decode }}"
+  when: groups[rabbitmq_group].0 != inventory_hostname
+  register: __rabbitmq_cookie_new
+  tags: ["rabbit:cookie"]
+  notify:
+    - Restart rabbitmq
+
+- meta: flush_handlers
+
+- name: Stop rabbitmq app
+  shell: rabbitmqctl stop_app
+  when: groups[rabbitmq_group].0 != inventory_hostname and __rabbitmq_cookie_new | changed
+  notify:
+    - Start rabbitmq app
+
+- name: Reset rabbitmq
+  shell: rabbitmqctl reset
+  when: groups[rabbitmq_group].0 != inventory_hostname and __rabbitmq_cookie_new | changed
+
+- name: Add this node to cluster
+  shell: rabbitmqctl join_cluster rabbit@{{ groups[rabbitmq_group].0 }}
+  when: groups[rabbitmq_group].0 != inventory_hostname  and __rabbitmq_cookie_new | changed
+  register: __rabbitmq_join
+  ignore_errors: True
+
+- name: Fail if can not join
+  fail: msg="join_cluster failed but node is not already a member"
+  when: (__rabbitmq_join is defined) and
+        ('already_member' not in __rabbitmq_join.stderr) and
+        (__rabbitmq_join.rc != 0)

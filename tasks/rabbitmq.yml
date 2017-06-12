@@ -1,0 +1,11 @@
+- name: Installs rabbitmq
+  apt: pkg=rabbitmq-server state=present
+
+- name: Enable plugins
+  rabbitmq_plugin:
+    names: "{{ item }}"
+    state: enabled
+    new_only: yes
+  with_items: "{{ rabbitmq_plugins }}"
+  notify:
+    - Restart rabbitmq

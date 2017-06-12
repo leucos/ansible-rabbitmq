@@ -1,0 +1,9 @@
+- include: check_vars.yml
+  tags: ["rabbitmq", "check"]
+
+- include: rabbitmq.yml
+  tags: ["rabbitmq"]
+
+- include: cluster.yml
+  when: rabbitmq_group is defined and rabbitmq_group | count > 1
+  tags: ["rabbitmq"]
