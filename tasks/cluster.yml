@@ -38,9 +38,7 @@
 
 - name: Fail if can not join
   fail: msg="join_cluster failed but node is not already a member"
-  when: (__rabbitmq_join is defined) and
-        ('already_member' not in __rabbitmq_join.stderr) and
-        (__rabbitmq_join.rc != 0)
+  when: (__rabbitmq_join is defined and 'already_member' not in __rabbitmq_join.stderr and __rabbitmq_join.rc != 0)
 
 - name: Ensure the default vhost contains the HA policy
   rabbitmq_policy:
