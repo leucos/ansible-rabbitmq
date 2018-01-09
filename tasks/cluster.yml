@@ -38,11 +38,27 @@
 
 - name: Fail if can not join
   fail: msg="join_cluster failed but node is not already a member"
-  when: (__rabbitmq_join is defined and 'already_member' not in __rabbitmq_join.stderr and __rabbitmq_join.rc != 0)
+  when: (__rabbitmq_join is defined and "skipped" not in __rabbitmq_join and 'already_member' not in __rabbitmq_join.stderr and __rabbitmq_join.rc != 0)
 
 - name: Ensure the default vhost contains the HA policy
   rabbitmq_policy:
     name: HA
+    node: "rabbit@{{ inventory_hostname }}"
     pattern: .*
     tags:
       ha-mode: all
+
+- name: Creates rabbitmq users
+  rabbitmq_user:
+    user: "{{ item.user }}"
+    password: "{{ item.password }}"
+    vhost: "{{ item.vhost | default('/') }}"
+    configure_priv: "{{ item.configure_priv | default('') }}"
+    read_priv: "{{ item.read_priv | default('') }}"
+    write_priv: "{{ item.write_priv | default('') }}"
+    tags: "{{ item.tags | default([]) | join(',') }}"
+    state: present
+  run_once: true
+  with_items: "{{ rabbitmq_users }}"
+  tags: ["rabbitmq:users"]
+

@@ -2,3 +2,4 @@ rabbitmq_plugins:
   - rabbitmq_management
   - rabbitmq_management_agent
 
+rabbitmq_users: []
